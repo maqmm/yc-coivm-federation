@@ -2,18 +2,18 @@
 # Развёртывание федерации удостоверений в Yandex Cloud на базе решения Keycloak
 
 ## Описание решения
-Для предоставления доступа корпоративным пользователям к облачным ресурсам в [Yandex Cloud](https://cloud.yandex.ru) используются:
-* [сервис организации](https://cloud.yandex.ru/docs/organization/) 
-* [федерация удостоверений](https://cloud.yandex.ru/docs/organization/add-federation)
+Для предоставления доступа корпоративным пользователям к облачным ресурсам в [Yandex Cloud](https://yandex.cloud) используются:
+* [сервис организации](https://yandex.cloud/ru/docs/organization/) 
+* [федерация удостоверений](https://yandex.cloud/ru/docs/organization/add-federation)
 * [Identity Provider](https://en.wikipedia.org/wiki/Identity_provider) (`IdP`)
 
 `Организация` является контейнером для пользователей. В организацию пользователи добавляются и удаляются.
 
-`idP` выполняет функцию аутентификации и обычно интегрируется с хранилищем учетных данных пользователей, например, MS Active Directory, база данных и т.п.
+`IdP` выполняет функцию аутентификации и обычно интегрируется с хранилищем учетных данных пользователей, например, MS Active Directory, база данных и т.п.
 
-`Федерация удостоверений` выступает посредником между сервисом организации и `IdP`. С помощью федерации учетные записи пользователей из `IdP` синхронизируются в организацию Yandex Cloud.
+`Федерация удостоверений` выступает как соединитель между сервисом организации и `IdP`. С помощью федерации учетные записи пользователей из `IdP` синхронизируются в организацию Yandex Cloud.
 
-После успешной синхронизации учетных записей пользователей в организацию, им можно назначать роли (выдавать права) на различные облачные объекты. В Yandex Cloud поддерживаются федерации удостоверений на базе стандарта [SAML v2.0](https://wiki.oasis-open.org/security#SAML_V2.0_Standard).
+После успешной синхронизации учетных записей пользователей в организацию Yandex Cloud, им можно [назначать роли](https://yandex.cloud/ru/docs/iam/roles-reference) (выдавать права) на облачные ресурсы. В Yandex Cloud поддерживаются федерации удостоверений на базе стандарта [SAML v2.0](https://wiki.oasis-open.org/security#SAML_V2.0_Standard). Ознакомиться [со списком IdP](https://yandex.cloud/ru/docs/organization/concepts/add-federation#federation-usage), которые были протестированы для работы с федерациями удостоверений в Yandex Cloud вы можете в соответствующем разделе документации. 
 
 
 В данном решении `аутентификация` пользователя реализована так:
@@ -39,25 +39,22 @@
 * [keycloak-deploy](#kc-deploy)
 * [keycloak-config](#kc-config)
 
-Разбиение решения на два модуля вызвано тем, что [Keycloak Terraform провайдер](https://registry.tfpla.net/providers/mrparkers/keycloak/latest/docs) требует уже работающего (alive) Keycloak.
+Решение разбито на два модуля, поскольку [Keycloak Terraform провайдер](https://github.com/mrparkers/terraform-provider-keycloak) требует уже работающего (alive) Keycloak.
 
 
 ### Модуль keycloak-deploy <a id="kc-deploy"/></a>
 Модуль `keycloak-deploy` создаёт следующие объекты в Yandex Cloud:
-* кластер [Managed Service for PostgreSQL](https://cloud.yandex.ru/docs/managed-postgresql/) - для хранения конфигурации Keycloak
+* кластер [Managed Service for PostgreSQL](https://yandex.cloud/ru/docs/managed-postgresql/) - для хранения конфигурации Keycloak
 * сертификат [Let's Encrypt](https://letsencrypt.org/) для веб-сервера Keycloak
-* статический [публичный IP-адрес](https://cloud.yandex.ru/docs/vpc/concepts/address#public-addresses) для ВМ Keycloak
-* [группу безопасности](https://cloud.yandex.ru/docs/vpc/concepts/security-groups) для ВМ Keycloak
+* статический [публичный IP-адрес](https://yandex.cloud/ru/docs/vpc/concepts/address#public-addresses) для ВМ Keycloak
+* [группу безопасности](https://yandex.cloud/ru/docs/vpc/concepts/security-groups) для ВМ Keycloak
 * ВМ с решением Keycloak 
 
 С полным списком входных параметров модуля можно ознакомиться [по ссылке](./keycloak-deploy/variables.tf).
 
-После завершения своей работы модуль возвращает значение `FQDN` для ВМ с развёрнутым решением Keycloak, например, `kc1.mydom.net` 
-
-
 ### Модуль keycloak-config <a id="kc-config"/></a>
 Модуль `keycloak-config` выполняет следующие действия:
-* создаёт [федерацию удостоверений](https://cloud.yandex.ru/docs/organization/add-federation) в Yandex Cloud
+* создаёт [федерацию удостоверений](https://yandex.cloud/ru/docs/organization/concepts/add-federation) в Yandex Cloud
 * создаёт Realm и сопутствующие объекты в конфигурации Keycloak
 * обеспечивает обмен сертификатами между федерацией Yandex Cloud и Keycloak Realm
 * создаёт учётную запись для тестового пользователя в Keycloak
@@ -65,7 +62,7 @@
 
 С полным списком входных параметров модуля можно ознакомиться [по ссылке](./keycloak-config/variables.tf).
 
-После завершения своей работы модуль возвращает значение `URL` федерации удостоверений, например, `https://console.yandex.ru/federations/bpf3375ucdgp5dxq823tt` 
+После завершения своей работы модуль выдаст ссылку вида, `https://console.yandex.cloud/federations/bpf3375ucdgp5dxq823tt`, которую нужно будет использовать в дальнейшем для подключения к облачным ресурсам через федерацию. После обращения по ссылке вы будете перенаправлены на страницу Keycloak для ввода учетных данных (имя пользователя и пароль).
 
 
 ### Синхронизация данных между TF модулями <a id="sync-data"/></a>
@@ -82,7 +79,7 @@
 
 Перед развёртывание решения в Yandex Cloud уже должны существовать следующие объекты:
 * каталог облачных ресурсов (folder) в котором будут развёртываться компоненты решения (`kc_folder_name`)
-* [публичная зона](https://cloud.yandex.ru/docs/dns/concepts/dns-zone#public-zones) в сервисе [Cloud DNS](https://cloud.yandex.ru/docs/dns/). Домен, который будет создаваться в сервисе Cloud DNS должен быть предварительно `делегирован` со стороны регистратора домена (`dns_zone_name`)
+* [публичная зона](https://yandex.cloud/ru/docs/dns/concepts/dns-zone#public-zones) в сервисе `Cloud DNS`. Домен, который будет создаваться в сервисе Cloud DNS должен быть предварительно `делегирован` со стороны регистратора домена (`dns_zone_name`)
 * сеть (network) в которой будут развёртываться компоненты решения (`kc_network_name`)
 * подсеть (subnet) в которой будут развёртываться компоненты решения (`kc_subnet_name`)
 
@@ -94,22 +91,25 @@
 
 Развёртывание решения под управлением ОС `Windows` не тестировалось.
 
-1. Загрузить решение из репозитория на [github.com](https://github.com/yandex-cloud/yc-solution-library-for-security):
+0. Перед началом развертывания необходимо убедиться, что необходимые для развертывания инструменты установлены и настроены:
+* `yc CLI` - [установлен](https://yandex.cloud/ru/docs/cli/operations/install-cli) и [настроен](https://yandex.cloud/ru/docs/cli/operations/profile/profile-create#create)
+* `Terraform` - [установлен](https://yandex.cloud/ru/docs/tutorials/infrastructure-management/terraform-quickstart#install-terraform) и [настроен](https://yandex.cloud/ru/docs/tutorials/infrastructure-management/terraform-quickstart#configure-provider)
+
+1. Загрузить решение из репозитория на [github.com](https://github.com/yandex-cloud-examples/yc-iam-federation-with-keycloak-vm):
     ```bash
-    curl -s https://raw.githubusercontent.com/yandex-cloud/yc-solution-library-for-security/master/auth_and_access/keycloak/examples/install.sh | bash
+    git clone https://github.com/yandex-cloud-examples/yc-iam-federation-with-keycloak-vm.git
     ```
 
 2. Перейти в папку с примером развёртывания модуля [keycloak-deploy](./examples/keycloak-deploy/):
     ```bash
-    cd keycloak/keycloak-deploy
-    pwd
+    cd yc-iam-federation-with-keycloak-vm/examples/keycloak-deploy
     ```
 
 3. `Важно!` Убедиться что все [внешние зависимости](#ext-dep) созданы.
 
 4. Проверить значения переменных в файле [main.tf](./examples/keycloak-deploy/main.tf) и скорректировать их при необходимости. 
 
-5. Выполнить инициализацию Terraform:
+5. Подготовить переменные окружения для развёртывания решения:
     ```bash
     source ../env-yc.sh
     terraform init
@@ -121,19 +121,21 @@
     ```
     Обработка запроса на выдачу сертификата в сервисе [Let's Encrypt](https://letsencrypt.org/) может выполняться `до 30 минут`!
 
-7. Опционально. Проверить состояние выданного сертификата Let's Encrypt:
+7. Проверить состояние выданного сертификата Let's Encrypt:
     ```bash
     yc cm certificate list
     ```
+
 8. Перейти в папку с примером развёртывания модуля [keycloak-config](./examples/keycloak-config/):
     ```bash
     cd ../keycloak-config
-    pwd
     ```
+
 9. Выполнить синхронизацию параметров между TF модулями:
     ```bash
     bash sync.sh
     ```
+
 10. Проверить значения переменных в файле [main.tf](./examples/keycloak-config/main.tf) и скорректировать их при необходимости.
 
 11. Выполнить инициализацию Terraform:
@@ -155,10 +157,10 @@
 ## Результаты развёртывания
 
 В результате развёртывания решения в Yandex Cloud будут созданы следующие объекты:
-* [федерация удостоверений]((https://cloud.yandex.ru/docs/organization/add-federation)) в указанной [организации](https://cloud.yandex.ru/docs/organization/add-federation)
-* `сертификат` [Let's Encrypt](https://letsencrypt.org/) для ВМ с Keycloak в сервисе [Certificate Manager](https://cloud.yandex.ru/docs/certificate-manager/)
-* `виртуальная машина` с IdP Keycloak интегрированная с федерацией на стороне Yandex Cloud
+* [федерация удостоверений](https://yandex.cloud/ru/docs/organization/concepts/add-federation) в указанной `организации`
+* `сертификат` [Let's Encrypt](https://letsencrypt.org/) для ВМ с Keycloak в сервисе [Certificate Manager](https://yandex.cloud/ru/docs/certificate-manager)
+* `виртуальная машина` с IdP Keycloak успешно взаимодействует с федерацией удостоверений со стороны Yandex Cloud
 * `запись в Yandex Cloud DNS` с публичным IP-адресом ВМ Keycloak
-* `учётная запись` пользователя в IdP Keycloak и её синхронизация в организации Yandex Cloud
+* `учётная запись` пользователя в IdP Keycloak синхронизирована через федерацию в организацию Yandex Cloud
 
-После развёртывания решения останется выдать необходимые [роли](https://cloud.yandex.ru/docs/iam/concepts/access-control/roles) на нужные облачные ресурсы для созданной в организации учётной записи пользователя.
+После развёртывания решения останется выдать необходимые [роли](https://yandex.cloud/ru/docs/iam/roles-reference) на нужные облачные ресурсы для созданной в организации учётной записи пользователя.
