@@ -33,6 +33,12 @@ variable "kc_subnet_name" {
   default     = null
 }
 
+variable "kc_preemptible" {
+  description = "Keycloak VM preemptible"
+  type        = bool
+  default     = false
+}
+
 variable "kc_folder_name" {
   description = "Keycloak VM folder name"
   type        = string
@@ -75,10 +81,20 @@ variable "kc_vm_ssh_key_file" {
   default     = "~/.ssh/id_rsa.pub"
 }
 
+variable "dns_zone_id" {
+  description = "Yandex Cloud DNS Zone ID"
+  type        = string
+  default     = null
+}
+
 variable "dns_zone_name" {
   description = "Yandex Cloud DNS Zone Name"
   type        = string
   default     = null
+  validation {
+    condition     = var.dns_zone_id != "" || var.dns_zone_name != ""
+    error_message = "Either dns_zone_id or dns_zone_name must be specified."
+  }
 }
 
 variable "kc_fqdn" {
@@ -99,6 +115,12 @@ variable "kc_port" {
   default     = null
 }
 
+variable "create_vpc" {
+  description = "Flag to determine whether to create new VPC resources or use existing ones"
+  type        = bool
+  default     = false
+}
+
 variable "kc_adm_user" {
   description = "Keycloak admin user name"
   type        = string
@@ -111,35 +133,15 @@ variable "kc_adm_pass" {
   default     = null
 }
 
-# =============================
-# Keycloak PostgreSQL variables
-# =============================
-variable "pg_db_ver" {
-  description = "PostgeSQL cluster version"
-  type        = string
-  default     = null
-}
-
-variable "pg_db_name" {
-  description = "PostgeSQL cluster and database name"
-  type        = string
-  default     = null
-}
-
-variable "pg_db_user" {
-  description = "PostgeSQL database user name"
-  type        = string
-  default     = null
-}
-
-variable "pg_db_pass" {
-  description = "PostgeSQL database user password"
-  type        = string
-  default     = null
-}
 # =================================
 # Keycloak LE Certificate variables
 # =================================
+
+variable "cert_exist" {
+  description = "cloud cert id if it exist in folder"
+  type        = string
+  default     = null
+}
 
 variable "kc_cert_path" {
   description = "SSL certificates path location in the Keycloak VM"

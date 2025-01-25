@@ -7,6 +7,7 @@ provider "keycloak" {
   username  = var.kc_adm_user
   password  = var.kc_adm_pass
   url       = "https://${var.kc_fqdn}:${var.kc_port}"
+  client_timeout = 600
 }
 
 resource "keycloak_realm" "realm" {

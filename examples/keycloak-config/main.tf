@@ -12,8 +12,8 @@ terraform {
       version = "~> 3.2.2"
     }
     keycloak = {
-      source  = "mrparkers/keycloak"
-      version = "~> 4.4.0"
+      source = "keycloak/keycloak"
+      version = ">= 5.0.0"
     }
   }
 }
@@ -28,25 +28,26 @@ module "keycloak-config" {
   # =====================
   # Org/Federation values
   # =====================
-  org_id   = "bpfqdgu3d2815fyixlks"
-  fed_name = "kc-fed"
+  org_id   = "" #var.YC_ORGANIZATION_ID #IMPORTANT RERUN source ../env-yc.sh OR PRINT ID HERE AS "<id>"
+  fed_name = "kc"
 
   kc_user = {
     name   = "kc-user1"
     pass   = "Gu95-paSw38"
-    domain = "mydom.net"
+    domain = "test.domain"
   }
+
 
   # ==================
   # Keycloak VM values
   # ==================
-  kc_realm_name  = "kc1"
+  kc_realm_name  = "kc"
   kc_realm_descr = "My Keycloak Realm"
 
-  kc_fqdn     = "kc1.mydom.net"
-  kc_port     = "8443"
+  kc_fqdn     = ""
+  kc_port = "8443"
   kc_adm_user = "admin"
-  kc_adm_pass = "Fr#dR3n48Ga-Mov"
+  kc_adm_pass = ""
 }
 
 output "console-url" {

@@ -16,20 +16,41 @@ resource "yandex_organizationmanager_saml_federation" "kc_fed" {
   }
 }
 
-# Add Keycloak certificate to the YC Federation
+data "yandex_client_config" "client" {}
+
+
+
 resource "null_resource" "federation_cert" {
   provisioner "local-exec" {
-    command = <<-CMD
-    echo -----BEGIN CERTIFICATE-----\\n $(curl -s https://${var.kc_fqdn}:${var.kc_port}/realms/${var.kc_realm_name}/protocol/saml/descriptor | awk '{split($0,lst,"X509Certificate>"); print substr(lst[2],1,length(lst[2])-5)}')\\n-----END CERTIFICATE----- | tee ${abspath(path.cwd)}/${var.kc_realm_name}-cert.pem
-    
-    yc organization-manager federation saml certificate create \
-    --name=${var.fed_name} \
-    --federation-id=${yandex_organizationmanager_saml_federation.kc_fed.id} \
-    --certificate-file=${abspath(path.cwd)}/${var.kc_realm_name}-cert.pem
-    CMD
+    command = <<-EOT
+      # Get certificate data
+      curl -s https://${var.kc_fqdn}:${var.kc_port}/realms/${var.kc_realm_name}/protocol/saml/descriptor | \
+      awk -F'[<>]' '/<X509Certificate>/{print "-----BEGIN CERTIFICATE-----\n" $3 "\n-----END CERTIFICATE-----"}' > cert.pem
+      
+      # Create and send request
+      curl \
+        --fail \
+        --silent \
+        --show-error \
+        --request POST \
+        --header "Content-Type: application/json" \
+        --header "Authorization: Bearer ${data.yandex_client_config.client.iam_token}" \
+        --data @- <<'CURL_EOF'
+      {
+        "federationId": "${yandex_organizationmanager_saml_federation.kc_fed.id}",
+        "description": "Keycloak SAML Federation Certificate",
+        "name": "${var.fed_name}",
+        "data": "$(cat cert.pem)"
+      }
+CURL_EOF
+      
+      rm cert.pem
+    EOT
   }
+
   depends_on = [
-    keycloak_realm.realm
+    keycloak_realm.realm,
+    yandex_organizationmanager_saml_federation.kc_fed
   ]
 }
 

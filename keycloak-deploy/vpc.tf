@@ -2,16 +2,35 @@
 # VPC resources
 # =============
 
-# Define Keycloak Network
+# Define or Create VPC resources based on var.create_vpc
+
+# Data sources for existing network and subnet
 data "yandex_vpc_network" "kc_net" {
-  folder_id = "${data.yandex_resourcemanager_folder.kc_folder.id}"
-  name = var.kc_network_name
+  count     = var.create_vpc ? 0 : 1
+  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
+  name      = var.kc_network_name
 }
 
-# Define Keycloak Subnet
 data "yandex_vpc_subnet" "kc_subnet" {
-  folder_id = "${data.yandex_resourcemanager_folder.kc_folder.id}"
-  name = var.kc_subnet_name
+  count     = var.create_vpc ? 0 : 1
+  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
+  name      = var.kc_subnet_name
+}
+
+# Resources for creating new network and subnet
+resource "yandex_vpc_network" "kc_net" {
+  count     = var.create_vpc ? 1 : 0
+  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
+  name      = var.kc_network_name
+}
+
+resource "yandex_vpc_subnet" "kc_subnet" {
+  count          = var.create_vpc ? 1 : 0
+  folder_id      = data.yandex_resourcemanager_folder.kc_folder.id
+  v4_cidr_blocks = ["10.10.10.0/24"]
+  name           = var.kc_subnet_name
+  network_id     = yandex_vpc_network.kc_net[0].id
+  zone           = var.kc_zone_id
 }
 
 # Create public ip address for Keycloak VM
@@ -27,7 +46,11 @@ resource "yandex_vpc_address" "kc_pub_ip" {
 resource "yandex_vpc_security_group" "kc_sg" {
   name = var.kc_vm_sg_name
   folder_id = "${data.yandex_resourcemanager_folder.kc_folder.id}"
-  network_id = "${data.yandex_vpc_network.kc_net.id}"
+  network_id = var.create_vpc ? (
+    yandex_vpc_network.kc_net[0].id
+  ) : (
+    data.yandex_vpc_network.kc_net[0].id
+  )
 
   egress {
     description    = "Permit ALL" 

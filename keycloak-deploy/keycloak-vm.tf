@@ -3,8 +3,8 @@
 # =====================
 
 data "yandex_resourcemanager_folder" "kc_folder" {
-  cloud_id = var.cloud_id
-  name     = var.kc_folder_name
+  cloud_id  = var.cloud_id
+  folder_id = var.kc_folder_name
 }
 
 # Define a Keycloak VM base image
@@ -40,7 +40,6 @@ resource "yandex_resourcemanager_folder_iam_member" "compute_viewer" {
   member    = "serviceAccount:${yandex_iam_service_account.kc_sa.id}"
 }
 
-
 # Create Keycloak VM
 resource "yandex_compute_instance" "kc_vm" {
   folder_id          = data.yandex_resourcemanager_folder.kc_folder.id
@@ -52,69 +51,59 @@ resource "yandex_compute_instance" "kc_vm" {
 
   resources {
     cores  = 2
-    memory = 8
+    memory = 2
+    core_fraction = 100
+  }
+
+  scheduling_policy {
+    preemptible = var.kc_preemptible
   }
 
   boot_disk {
     initialize_params {
       image_id = data.yandex_compute_image.kc_image.id
       type     = "network-ssd"
-      size     = 80
+      size     = data.yandex_compute_image.kc_image.min_disk_size + 18
     }
   }
 
   network_interface {
-    subnet_id          = data.yandex_vpc_subnet.kc_subnet.id
+    subnet_id          = var.create_vpc ? (yandex_vpc_subnet.kc_subnet[0].id) : (data.yandex_vpc_subnet.kc_subnet[0].id)
     nat                = true
     nat_ip_address     = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
     security_group_ids = [yandex_vpc_security_group.kc_sg.id]
   }
 
   metadata = {
-    user-data = templatefile("${abspath(path.module)}/kc-vm-init.tpl", {
+    user-data = templatefile("${abspath(path.module)}/kc-vm-user-data.tpl", {
       username = "${chomp(var.kc_vm_username)}",
       ssh_key  = file("${chomp(var.kc_vm_ssh_key_file)}")
-    })
+    }),
+    docker-compose = templatefile("${abspath(path.module)}/kc-vm-docker-compose.tpl", {
+      VER = "${chomp(var.kc_ver)}",
+      PORT = "${chomp(var.kc_port)}",
+      KC_USER = "${chomp(var.kc_adm_user)}",
+      KC_PASS = "${chomp(var.kc_adm_pass)}",
+      VM_USER = "${chomp(var.kc_vm_username)}",
+      KC_FQDN = "${chomp(local.kc_fqdn)}",
+    }),
   }
 
-  # Prepare input data for Keycloak VM provisioning script
   provisioner "file" {
-    destination = "kc-data.sh"
-    content     = <<EOF
-      export KC_FQDN=${local.kc_fqdn}
-      export KC_VER=${var.kc_ver}
-      export KC_PORT=${var.kc_port}
-      export KC_ADM_USER=${var.kc_adm_user}
-      export KC_ADM_PASS=${var.kc_adm_pass}
-      export KC_CERT_PATH=${var.kc_cert_path}
-      export PG_DB_HOST=${yandex_mdb_postgresql_cluster.pg_cluster.host.0.fqdn}
-      export PG_DB_NAME=${var.pg_db_name}
-      export PG_DB_USER=${var.pg_db_user}
-      export PG_DB_PASS=${var.pg_db_pass}
-      export KC_CERT_NAME=${var.le_cert_name}
-      export KC_CERT_PUB=${var.le_cert_pub_chain}
-      export KC_CERT_PRIV=${var.le_cert_priv_key}
-    EOF
+    source      = "${path.root}/cert.pem"
+    destination = "/home/${var.kc_vm_username}/cert.pem"
   }
 
-  # Keyclock VM provisioning script
   provisioner "file" {
-    source      = "${abspath(path.module)}/kc-setup.sh"
-    destination = "kc-setup.sh"
+    source      = "${path.root}/key.pem"
+    destination = "/home/${var.kc_vm_username}/key.pem"
   }
 
   connection {
     type        = "ssh"
     user        = var.kc_vm_username
-    private_key = file("~/.ssh/id_ed25519")
+    private_key = file("~/.ssh/id_rsa")
     host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
   }
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo bash kc-setup.sh"
-    ]
-  }
-
-  depends_on = [yandex_mdb_postgresql_database.pg_db]
 }

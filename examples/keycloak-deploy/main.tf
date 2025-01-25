@@ -21,38 +21,34 @@ module "keycloak-deploy" {
   # ==================
   # Keycloak VM values
   # ==================
-  kc_image_family = "ubuntu-2204-lts"
+  kc_image_family = "container-optimized-image"
 
-  kc_folder_name  = "infra"
-  kc_zone_id      = "ru-central1-b"
-  kc_network_name = "infra-net"
-  kc_subnet_name  = "infra-subnet-b"
+  kc_folder_name  = var.YC_FOLDER_ID
+  kc_zone_id      = "ru-central1-d"
+  kc_network_name = "forkc"
+  kc_subnet_name  = "forkc-ru-central1-d"
+  create_vpc      = false
+  kc_preemptible  = true
 
-  kc_hostname        = "kc1"
   kc_vm_sg_name      = "kc-sg"
   kc_vm_username     = "admin"
-  kc_vm_ssh_key_file = "~/.ssh/id_ed25519.pub"
+  kc_vm_ssh_key_file = "~/.ssh/id_rsa.pub"
 
-  dns_zone_name = "mydom-net"
+  dns_zone_id   = ""          #ONE OF NAME OR ID ARE IMPORTANT
+  dns_zone_name = "" #ONE OF NAME OR ID ARE IMPORTANT
+  kc_hostname   = "fed"
 
-  kc_ver      = "24.0.4"
+  kc_ver      = "20.0.0"
   kc_port     = "8443"
   kc_adm_user = "admin"
-  kc_adm_pass = "Fr#dR3n48Ga-Mov"
-
-  # =================
-  # PostgreSQL values
-  # =================
-  pg_db_ver  = "16"
-  pg_db_name = "kc1-db"
-  pg_db_user = "dbadmin"
-  pg_db_pass = "My82Sup@paS98"
+  kc_adm_pass = "" #RUN source ../env-yc.sh FOR FIRST RANDOM GENERATION, VALUE IN BOTH MAIN.TF MUST BE EMPTY
 
   # ===================
   # Certificates values
   # ===================
+  cert_exist        = var.CERTIFICATE_ID
   kc_cert_path      = "/usr/local/etc/certs"
-  le_cert_name      = "kc1"
+  le_cert_name      = "kc"
   le_cert_descr     = "LE Certificate for Keycloak VM"
   le_cert_pub_chain = "cert-pub-chain.pem"
   le_cert_priv_key  = "cert-priv-key.pem"

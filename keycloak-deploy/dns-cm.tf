@@ -1,10 +1,12 @@
+
 # ===================================
 # DNS & Certificate Manager resources
 # ===================================
 
 data "yandex_dns_zone" "kc_dns_zone" {
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
-  name      = var.dns_zone_name
+  dns_zone_id = var.dns_zone_id != "" ? var.dns_zone_id : null
+  name        = var.dns_zone_id == "" ? var.dns_zone_name : null
 }
 
 locals {
@@ -20,21 +22,73 @@ resource "yandex_dns_recordset" "kc_dns_rec" {
   data    = ["${yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address}"]
 }
 
-# Create request to the Let's Encrypt service for Keycloak's VM certificate
+locals {
+  cert_exists = can(data.yandex_cm_certificate.cert_existing.status)
+  cert_is_valid = local.cert_exists && (
+    data.yandex_cm_certificate.cert_existing.status == "ISSUED" &&
+    contains(data.yandex_cm_certificate.cert_existing.domains, local.kc_fqdn)
+  )
+  need_new_cert = !local.cert_is_valid
+}
+
+# Попытка получить существующий сертификат
+data "yandex_cm_certificate" "cert_existing" {
+  certificate_id = var.cert_exist != "" ? var.cert_exist : null
+  name          = var.cert_exist == "" ? var.le_cert_name : null
+  folder_id     = data.yandex_resourcemanager_folder.kc_folder.id
+}
+
+# Создание нового сертификата, если существующий невалиден или не существует
 resource "yandex_cm_certificate" "kc_le_cert" {
+  count     = local.need_new_cert ? 1 : 0
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
   name      = var.le_cert_name
-  domains   = ["${local.kc_fqdn}"]
+  domains   = [local.kc_fqdn]
   managed {
     challenge_type = "DNS_CNAME"
+  }
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      domains,
+      managed
+    ]
   }
 }
 
 # Create domain validation DNS record for Let's Encrypt service
 resource "yandex_dns_recordset" "validation_dns_rec" {
+  count  = local.need_new_cert ? 1 : 0
   zone_id = data.yandex_dns_zone.kc_dns_zone.id
-  name    = yandex_cm_certificate.kc_le_cert.challenges[0].dns_name
-  type    = yandex_cm_certificate.kc_le_cert.challenges[0].dns_type
-  data    = [yandex_cm_certificate.kc_le_cert.challenges[0].dns_value]
+  name    = yandex_cm_certificate.kc_le_cert[0].challenges[0].dns_name
+  type    = yandex_cm_certificate.kc_le_cert[0].challenges[0].dns_type
+  data    = [yandex_cm_certificate.kc_le_cert[0].challenges[0].dns_value]
   ttl     = 60
+}
+
+# Wait for certificate validation
+data "yandex_cm_certificate" "cert_validated" {
+  depends_on = [
+    yandex_cm_certificate.kc_le_cert,
+    yandex_dns_recordset.validation_dns_rec
+  ]
+  certificate_id = local.need_new_cert ? yandex_cm_certificate.kc_le_cert[0].id : data.yandex_cm_certificate.cert_existing.id
+  wait_validation = true
+}
+
+# Get certificate content
+data "yandex_cm_certificate_content" "cert" {
+  certificate_id = data.yandex_cm_certificate.cert_validated.id
+  wait_validation = true
+}
+
+resource "local_file" "cert" {
+  content  = join("\n", data.yandex_cm_certificate_content.cert.certificates)
+  filename = "${path.root}/cert.pem"
+}
+
+resource "local_file" "key" {
+  content  = data.yandex_cm_certificate_content.cert.private_key
+  filename = "${path.root}/key.pem"
 }

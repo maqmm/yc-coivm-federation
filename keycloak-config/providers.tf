@@ -13,8 +13,8 @@ terraform {
       version = "~> 3.2.2"
     }
     keycloak = {
-      source  = "mrparkers/keycloak"
-      version = "~> 4.4.0"
+      source = "keycloak/keycloak"
+      version = ">= 5.0.0"
     }
   }
 }
