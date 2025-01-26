@@ -4,7 +4,7 @@
 
 data "yandex_resourcemanager_folder" "kc_folder" {
   cloud_id  = var.cloud_id
-  folder_id = var.kc_folder_name
+  folder_id = var.kc_folder_id
 }
 
 # Define a Keycloak VM base image
@@ -68,7 +68,7 @@ resource "yandex_compute_instance" "kc_vm" {
   }
 
   network_interface {
-    subnet_id          = var.create_vpc ? (yandex_vpc_subnet.kc_subnet[0].id) : (data.yandex_vpc_subnet.kc_subnet[0].id)
+    subnet_id          = local.need_new_subnet ? yandex_vpc_subnet.kc_subnet[0].id : data.yandex_vpc_subnet.kc_subnet_existing[0].id
     nat                = true
     nat_ip_address     = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
     security_group_ids = [yandex_vpc_security_group.kc_sg.id]
@@ -88,15 +88,19 @@ resource "yandex_compute_instance" "kc_vm" {
       KC_FQDN = "${chomp(local.kc_fqdn)}",
     }),
   }
+}
+
+resource "null_resource" "copy_certificates" {
+  depends_on = [local_file.cert, local_file.key]
 
   provisioner "file" {
     source      = "${path.root}/cert.pem"
-    destination = "/home/${var.kc_vm_username}/cert.pem"
+    destination = "/home/${var.kc_vm_username}/kc/cert.pem"
   }
 
   provisioner "file" {
     source      = "${path.root}/key.pem"
-    destination = "/home/${var.kc_vm_username}/key.pem"
+    destination = "/home/${var.kc_vm_username}/kc/key.pem"
   }
 
   connection {
@@ -105,5 +109,4 @@ resource "yandex_compute_instance" "kc_vm" {
     private_key = file("~/.ssh/id_rsa")
     host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
   }
-
 }

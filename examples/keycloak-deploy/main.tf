@@ -23,11 +23,10 @@ module "keycloak-deploy" {
   # ==================
   kc_image_family = "container-optimized-image"
 
-  kc_folder_name  = var.YC_FOLDER_ID
+  kc_folder_id  = var.YC_FOLDER_ID
   kc_zone_id      = "ru-central1-d"
   kc_network_name = "forkc"
   kc_subnet_name  = "forkc-ru-central1-d"
-  create_vpc      = false
   kc_preemptible  = true
 
   kc_vm_sg_name      = "kc-sg"
@@ -35,7 +34,7 @@ module "keycloak-deploy" {
   kc_vm_ssh_key_file = "~/.ssh/id_rsa.pub"
 
   dns_zone_id   = ""          #ONE OF NAME OR ID ARE IMPORTANT
-  dns_zone_name = "" #ONE OF NAME OR ID ARE IMPORTANT
+  dns_zone_name = ""          #ONE OF NAME OR ID ARE IMPORTANT
   kc_hostname   = "fed"
 
   kc_ver      = "20.0.0"

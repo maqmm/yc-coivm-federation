@@ -1,24 +1,23 @@
-
 #!/bin/bash
 
-# Настройки по умолчанию
+# default settings
 HTTPS_PORT=8443
-MAX_RETRIES=60
+MAX_RETRIES=120
 RETRY_INTERVAL=1
 
-# Получаем kc_fqdn из main.tf
+# parse kc_fqdn из main.tf
 KC_FQDN=$(grep 'kc_fqdn *= *"' main.tf | sed -E 's/.*"([^"]+)".*/\1/')
 
-# Проверяем, нашли ли переменную
+# validate value
 if [[ -z "$KC_FQDN" ]]; then
-    echo "Ошибка: не удалось найти переменную kc_fqdn в main.tf"
+    echo "ERROR: could not find variable kc_fqdn in main.tf"
     exit 1
 fi
 
-echo "Ожидание доступности Keycloak на $KC_FQDN:$HTTPS_PORT"
+echo "Waiting for Keycloak to be available: $KC_FQDN:$HTTPS_PORT"
 
 check_health() {
-    # Игнорируем stderr (где появляется ошибка HTTP/2 header) и проверяем только статус
+    # ignore stderr (HTTP/2 header) and check code only
     curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null | grep -q "HTTP/2 200"
     return $?
 }
@@ -27,14 +26,14 @@ wait_for_health() {
     local attempts=0
     while [ $attempts -lt $MAX_RETRIES ]; do
         if check_health; then
-            echo "Keycloak доступен и отвечает на HTTPS запросы!"
+            echo "Keycloak is available and responds to HTTPS requests!"
             return 0
         fi
         attempts=$((attempts + 1))
-        echo "Попытка $attempts/$MAX_RETRIES: Ожидание Keycloak..."
+        echo "Try $attempts/$MAX_RETRIES: Wait Keycloak..."
         sleep $RETRY_INTERVAL
     done
-    echo "Ошибка: Keycloak не запустился за $MAX_RETRIES попыток"
+    echo "ERROR: Keycloak did not start after $MAX_RETRIES attempts"
     return 1
 }
 

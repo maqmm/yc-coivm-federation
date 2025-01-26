@@ -39,7 +39,7 @@ variable "kc_preemptible" {
   default     = false
 }
 
-variable "kc_folder_name" {
+variable "kc_folder_id" {
   description = "Keycloak VM folder name"
   type        = string
   default     = null
@@ -113,12 +113,6 @@ variable "kc_port" {
   description = "Keycloak HTTPS port listener"
   type        = string
   default     = null
-}
-
-variable "create_vpc" {
-  description = "Flag to determine whether to create new VPC resources or use existing ones"
-  type        = bool
-  default     = false
 }
 
 variable "kc_adm_user" {
