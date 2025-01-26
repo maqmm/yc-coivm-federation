@@ -95,12 +95,12 @@ resource "null_resource" "copy_certificates" {
 
   provisioner "file" {
     source      = "${path.root}/cert.pem"
-    destination = "/home/${var.kc_vm_username}/kc/cert.pem"
+    destination = "/home/${var.kc_vm_username}/cert.pem"
   }
 
   provisioner "file" {
     source      = "${path.root}/key.pem"
-    destination = "/home/${var.kc_vm_username}/kc/key.pem"
+    destination = "/home/${var.kc_vm_username}/key.pem"
   }
 
   connection {

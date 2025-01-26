@@ -5,12 +5,17 @@ HTTPS_PORT=8443
 MAX_RETRIES=120
 RETRY_INTERVAL=1
 
-# parse kc_fqdn из main.tf
+# parse kc_fqdn & kc_port from main.tf
 KC_FQDN=$(grep 'kc_fqdn *= *"' main.tf | sed -E 's/.*"([^"]+)".*/\1/')
+HTTPS_PORT=$(grep 'kc_port *= *"' main.tf | sed -E 's/.*"([^"]+)".*/\1/')
 
-# validate value
+# validate values
 if [[ -z "$KC_FQDN" ]]; then
     echo "ERROR: could not find variable kc_fqdn in main.tf"
+    exit 1
+fi
+if [[ -z "$HTTPS_PORT" ]]; then
+    echo "ERROR: could not find variable kc_port in main.tf"
     exit 1
 fi
 
