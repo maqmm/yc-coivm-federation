@@ -52,3 +52,7 @@ module "keycloak-deploy" {
   le_cert_pub_chain = "cert-pub-chain.pem"
   le_cert_priv_key  = "cert-priv-key.pem"
 }
+
+output "kc_fqdn" {
+  value = module.keycloak-deploy.kc_fqdn
+}

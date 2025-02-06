@@ -21,7 +21,13 @@ export TF_VAR_YC_ORGANIZATION_ID=$ORG_ID
 
 # function to generate random password
 generate_password() {
-    LC_ALL=C tr -dc 'A-Za-z0-9!#$%&*()-_=+' </dev/urandom | head -c 16
+    upper=$(tr -dc 'A-Z' </dev/urandom | head -c 1)
+    lower=$(tr -dc 'a-z' </dev/urandom | head -c 1)
+    digit=$(tr -dc '0-9' </dev/urandom | head -c 1)
+
+    rest=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 13)
+
+    echo "$upper$lower$digit$rest" | fold -w1 | shuf | tr -d '\n'
 }
 
 # function to update password in file

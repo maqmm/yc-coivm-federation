@@ -51,7 +51,7 @@ resource "keycloak_realm" "realm" {
 }
 
 locals {
-  url_prefix = "https://console.cloud.yandex.ru"
+  url_prefix = "https://auth.yandex.cloud"
 }
 
 resource "keycloak_saml_client" "client" {

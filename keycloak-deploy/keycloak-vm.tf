@@ -108,5 +108,6 @@ resource "null_resource" "copy_certificates" {
     user        = var.kc_vm_username
     private_key = file("~/.ssh/id_rsa")
     host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
+    timeout     = "5m"
   }
 }

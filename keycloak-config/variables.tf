@@ -76,5 +76,5 @@ variable "kc_realm_descr" {
 }
 
 output "console-url" {
-  value = keycloak_saml_client.client.base_url
+  value = "https://console.yandex.cloud/federations/${yandex_organizationmanager_saml_federation.kc_fed.id}"
 }

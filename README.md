@@ -10,6 +10,7 @@
 > В репозитории не реализована удобная конфигурация пользователей, улучшение и переиспользование некоторых переменных. Coming soon...
 
 ## Оглавление
+* [Fast start](#fast-start)
 * [Описанние решения](#overview)
 * [Архитектура решения](#arch)
     * [Модуль keycloak-deploy](#keycloak-deploy)
@@ -18,6 +19,35 @@
 * [Порядок развёртывания решения](#deploy)
 * [Результаты резвёртывания](#results)
 
+## Fast start <a id="fast-start"/></a>
+
+0. 
+
+```
+git clone https://github.com/maqmm/yc-coivm-federation.git
+```
+
+1. Создайте профиль YC CLI.
+
+2. Для создания федерации выполните команду:
+
+```
+cd yc-coivm-federation/examples/keycloak-deploy && source ../env-yc.sh && terraform apply -auto-approve && cd ../keycloak-config && bash ./sync.sh && bash ./wait_for_keycloak.sh && terraform apply -auto-approve ; cd ..
+```
+
+Находясь в каталоге `examples` можно:
+
+* создавать ресурсы
+  
+  ```
+  cd keycloak-deploy && source ../env-yc.sh && terraform apply -auto-approve && cd ../keycloak-config && bash ./sync.sh && bash ./wait_for_keycloak.sh && terraform apply -auto-approve ; cd ..
+  ```
+
+* удалять ресурсы
+
+  ```
+  cd keycloak-config && terraform destroy -auto-approve && cd ../keycloak-deploy && terraform destroy -auto-approve ; cd ..
+  ```
 
 ## Описание решения <a id="overview"/></a>
 Подробную информацию о схеме работы и функционировании федераций можно прочитать в [origin репозитории](https://github.com/yandex-cloud-examples/yc-iam-federation-with-keycloak-vm?tab=readme-ov-file#overview) или [документации Yandex Cloud](https://yandex.cloud/ru/docs/organization/concepts/add-federation). 

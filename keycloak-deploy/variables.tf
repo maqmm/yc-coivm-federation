@@ -97,12 +97,6 @@ variable "dns_zone_name" {
   }
 }
 
-variable "kc_fqdn" {
-  description = "Keycloak public DNS FQDN"
-  type        = string
-  default     = null
-}
-
 variable "kc_ver" {
   description = "Keycloak version for deployment"
   type        = string
@@ -125,6 +119,10 @@ variable "kc_adm_pass" {
   description = "Keycloak admin user password"
   type        = string
   default     = null
+}
+
+output "kc_fqdn" {
+  value = local.kc_fqdn
 }
 
 # =================================
