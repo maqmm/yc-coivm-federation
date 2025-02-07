@@ -106,7 +106,7 @@ resource "null_resource" "copy_certificates" {
   connection {
     type        = "ssh"
     user        = var.kc_vm_username
-    private_key = file(coalesce("${chomp(var.kc_vm_ssh_priv_file)}", replace(var.kc_vm_ssh_pub_file, ".pub", "")))
+    private_key = file(var.kc_vm_ssh_priv_file != null ? chomp(var.kc_vm_ssh_priv_file) : replace(var.kc_vm_ssh_pub_file, ".pub", ""))
     host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
     timeout     = "5m"
   }

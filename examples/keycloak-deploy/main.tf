@@ -37,7 +37,7 @@ module "keycloak-deploy" {
   dns_zone_name = ""                            #ONE OF NAME OR ID ARE IMPORTANT
   kc_hostname   = "fed"
 
-  kc_ver      = "20.0.0"
+  kc_ver      = "26.1.1"
   kc_port     = "8443"
   kc_adm_user = "admin"
   kc_adm_pass = "" #RUN source ../env-yc.sh FOR FIRST RANDOM GENERATION, VALUE IN BOTH MAIN.TF MUST BE EMPTY
