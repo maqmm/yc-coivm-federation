@@ -75,10 +75,16 @@ variable "kc_vm_username" {
   default     = "admin"
 }
 
-variable "kc_vm_ssh_key_file" {
+variable "kc_vm_ssh_pub_file" {
   description = "SSH Public key path and filename"
   type        = string
-  default     = "~/.ssh/id_rsa.pub"
+  default     = null
+}
+
+variable "kc_vm_ssh_priv_file" {
+  description = "SSH Private key path and filename"
+  type        = string
+  default     = null
 }
 
 variable "dns_zone_id" {
@@ -91,10 +97,10 @@ variable "dns_zone_name" {
   description = "Yandex Cloud DNS Zone Name"
   type        = string
   default     = null
-  validation {
+/*  validation {
     condition     = var.dns_zone_id != "" || var.dns_zone_name != ""
     error_message = "Either dns_zone_id or dns_zone_name must be specified."
-  }
+  }*/
 }
 
 variable "kc_ver" {

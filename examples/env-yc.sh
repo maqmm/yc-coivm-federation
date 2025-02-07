@@ -10,11 +10,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export YC_TOKEN=$(yc iam create-token --profile "$YC_PROFILE")
 export TF_VAR_YC_CLOUD_ID=$(yc config get cloud-id --profile "$YC_PROFILE")
 export TF_VAR_YC_FOLDER_ID=$(yc config get folder-id --profile "$YC_PROFILE")
+
 ORG_ID=$(yc config get organization-id --profile "$YC_PROFILE")
 if [ -z "$ORG_ID" ]; then
   ORG_ID=$(yc resource-manager cloud get "$TF_VAR_YC_CLOUD_ID" --profile "$YC_PROFILE" --format=json --jq .organization_id)
 fi
 export TF_VAR_YC_ORGANIZATION_ID=$ORG_ID
+export TF_VAR_YC_ZONE_ID=$(yc dns zone list --profile "$YC_PROFILE" --format json --jq 'map(select(has("public_visibility"))) | if length == 1 then .[0].id else "" end')
 
     # debug output
 # echo "Script directory: $SCRIPT_DIR"
@@ -111,28 +113,41 @@ fi
 
 # get zone name from terraform file for cert checking
 if [ -f "$MAIN_TF" ]; then
-    ZONE_NAME=$(grep "dns_zone_name" "$MAIN_TF" | awk -F'"' '{print $2}')
-    if [ -n "$ZONE_NAME" ]; then
-        DNS_ZONE=$(yc dns zone get "$ZONE_NAME" --profile "$YC_PROFILE" | grep 'zone:' | awk '{print $2}' | sed 's/\.$//')
-        HOSTNAME=$(grep "kc_hostname" "$MAIN_TF" | awk -F'"' '{print $2}')
-
-        if [ -n "$DNS_ZONE" ] && [ -n "$HOSTNAME" ]; then
-            DOMAIN="${HOSTNAME}.${DNS_ZONE}"
-            CERT_ID=$(yc cm certificates list --profile "$YC_PROFILE" \
-                --format="json" | \
-                jq -r '.[] | select(.status == "ISSUED" and (.domains | any(. == "'$DOMAIN'"))) | .id' \
-                | head -n1)
-
-            if [ -n "$CERT_ID" ]; then
-                export TF_VAR_CERTIFICATE_ID="$CERT_ID"
+    ZONE_ID=$(grep "dns_zone_id" "$MAIN_TF" | grep -o '"[^"]*"' | sed 's/"//g')
+    ZONE_NAME=$(grep "dns_zone_name" "$MAIN_TF" | grep -o '"[^"]*"' | sed 's/"//g')
+    
+    if [ -z "$ZONE_ID" ]; then
+        if [ -n "$ZONE_NAME" ]; then
+            DNS_ZONE=$ZONE_NAME
+        else
+            if [ -n "$TF_VAR_YC_ZONE_ID" ]; then
+                DNS_ZONE=$TF_VAR_YC_ZONE_ID
             fi
+        fi
+    else
+        DNS_ZONE=$ZONE_ID
+    fi
+
+    ZONE_DOMAIN=$(yc dns zone get "$DNS_ZONE" --profile "$YC_PROFILE" --format json --jq .zone)
+    HOSTNAME=$(grep "kc_hostname" "$MAIN_TF" | grep -o '"[^"]*"' | sed 's/"//g')
+
+    if [ -n "$ZONE_DOMAIN" ] && [ -n "$HOSTNAME" ]; then
+        
+        DOMAIN=$(echo "${HOSTNAME}.${ZONE_DOMAIN}" | sed 's/\.$//')
+        CERT_ID=$(yc cm certificates list --profile "$YC_PROFILE" --format json --jq '.[] | select(.status == "ISSUED" and (.domains | any(. == "'$DOMAIN'"))) | .id' | head -n1)
+
+        if [ -n "$CERT_ID" ]; then
+            export TF_VAR_CERTIFICATE_ID="$CERT_ID"
         fi
     fi
 fi
 
+
+
 # print configuration
-echo "CLI profile:     ${YC_PROFILE:-current}"
-echo "Organization ID: $TF_VAR_YC_ORGANIZATION_ID"
-echo "Cloud ID:        $TF_VAR_YC_CLOUD_ID"
-echo "Folder ID:       $TF_VAR_YC_FOLDER_ID"
-echo "Cert ID:         ${CERT_ID:-not found}"
+echo "CLI profile:       ${YC_PROFILE:-current}"
+echo "Organization ID:   $TF_VAR_YC_ORGANIZATION_ID"
+echo "Cloud ID:          $TF_VAR_YC_CLOUD_ID"
+echo "Folder ID:         $TF_VAR_YC_FOLDER_ID"
+echo "DNS zone ID:       ${TF_VAR_YC_ZONE_ID:-more or less one zone in folder}"
+echo "Cert ID:           ${CERT_ID:-not found}"

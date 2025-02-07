@@ -77,7 +77,7 @@ resource "yandex_compute_instance" "kc_vm" {
   metadata = {
     user-data = templatefile("${abspath(path.module)}/kc-vm-user-data.tpl", {
       username = "${chomp(var.kc_vm_username)}",
-      ssh_key  = file("${chomp(var.kc_vm_ssh_key_file)}")
+      ssh_key  = file("${chomp(var.kc_vm_ssh_pub_file)}")
     }),
     docker-compose = templatefile("${abspath(path.module)}/kc-vm-docker-compose.tpl", {
       VER = "${chomp(var.kc_ver)}",
@@ -106,7 +106,7 @@ resource "null_resource" "copy_certificates" {
   connection {
     type        = "ssh"
     user        = var.kc_vm_username
-    private_key = file("~/.ssh/id_rsa")
+    private_key = file(coalesce("${chomp(var.kc_vm_ssh_priv_file)}", replace(var.kc_vm_ssh_pub_file, ".pub", "")))
     host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
     timeout     = "5m"
   }

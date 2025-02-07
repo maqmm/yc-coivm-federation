@@ -11,6 +11,10 @@ variable "YC_FOLDER_ID" {
   description = "Folder ID"
 }
 
+variable "YC_ZONE_ID" {
+  description = "DNS zone ID"
+}
+
 variable "CERTIFICATE_ID" {
   description = "Cert ID"
 }

@@ -29,12 +29,12 @@ module "keycloak-deploy" {
   kc_subnet_name  = "forkc-ru-central1-d"
   kc_preemptible  = true
 
-  kc_vm_sg_name      = "kc-sg"
-  kc_vm_username     = "admin"
-  kc_vm_ssh_key_file = "~/.ssh/id_rsa.pub"
+  kc_vm_sg_name       = "kc-sg"
+  kc_vm_username      = "admin"
+  kc_vm_ssh_pub_file  = "~/.ssh/id_rsa.pub"
 
-  dns_zone_id   = ""          #ONE OF NAME OR ID ARE IMPORTANT
-  dns_zone_name = ""          #ONE OF NAME OR ID ARE IMPORTANT
+  dns_zone_id   = coalesce("", var.YC_ZONE_ID)  #ONE OF NAME OR ID ARE IMPORTANT
+  dns_zone_name = ""                            #ONE OF NAME OR ID ARE IMPORTANT
   kc_hostname   = "fed"
 
   kc_ver      = "20.0.0"
