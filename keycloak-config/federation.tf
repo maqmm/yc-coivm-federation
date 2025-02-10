@@ -49,10 +49,11 @@ EOF
   ]
 }
 
-# Import Test user account to YC Organization from Keycloak
-resource "yandex_organizationmanager_saml_federation_user_account" "kc_test_user" {
+resource "yandex_organizationmanager_saml_federation_user_account" "org_users" {
+  for_each = var.users.users
+
   federation_id = yandex_organizationmanager_saml_federation.kc_fed.id
-  name_id       = var.kc_user.name
+  name_id       = each.key
 
   depends_on = [
     null_resource.federation_cert

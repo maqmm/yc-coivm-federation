@@ -11,12 +11,12 @@
 
 ## Оглавление
 * [Fast start](#fast-start)
-* [Описанние решения](#overview)
-* [Архитектура решения](#arch)
+* [Описанние](#overview)
+* [Архитектура](#arch)
     * [Модуль keycloak-deploy](#keycloak-deploy)
     * [Модуль keycloak-config](#keycloak-config)
-* [Способы развёртывания решения](#deploy-ways)
-* [Порядок развёртывания решения](#deploy)
+* [Способы развёртывания](#deploy-ways)
+* [Порядок развёртывания](#deploy)
 * [Результаты резвёртывания](#results)
 
 ## Fast start <a id="fast-start"/></a>
@@ -50,7 +50,17 @@ cd yc-coivm-federation/examples/keycloak-deploy && terraform init && source ../e
   ```
 
 ## Описание решения <a id="overview"/></a>
-Подробную информацию о схеме работы и функционировании федераций можно прочитать в [origin репозитории](https://github.com/yandex-cloud-examples/yc-iam-federation-with-keycloak-vm?tab=readme-ov-file#overview) или [документации Yandex Cloud](https://yandex.cloud/ru/docs/organization/concepts/add-federation). 
+Подробную информацию о схеме работы и функционировании федераций можно прочитать в [origin репозитории](https://github.com/yandex-cloud-examples/yc-iam-federation-with-keycloak-vm?tab=readme-ov-file#overview) или [документации Yandex Cloud](https://yandex.cloud/ru/docs/organization/concepts/add-federation). Примерное взаимодействие браузера пользователя, SP и IdP показано на схеме:
+
+![SAML](./saml.svg)
+
+1. Пользователь переходит по ссылке `https://console.yandex.cloud/federations/<FED_ID>`. Происходит несколько редиректов к `auth.yandex.cloud`. Генерируется SAMLRequest. В браузер возвращается редирект к SSO URL, указанный в федерации удостоверений.
+
+2. Браузер переходит по указанному location в редиректе. В URL query params подставлен SAMLRequest. IdP валидирует SAMLRequest и отправляет форму ввода аутентификационных данных в HTML странице.
+
+3. Пользователь заполняет форму. После нажатия кнопки отправляется POST запрос. IdP валидирует введенные данные. Если проверка прошла успешно, на стороне IdP генерируется SAMLResponse, подставляется в готовый POST запрос, который в свою очередь подставляется в HTML auto-submit форму, которая выполняется при загрузке HTML документа.
+
+4. Браузером загружается страница с формой и POST запрос с SAMLResponse отправляется к SP по ASC USL. Происходит редирект на `https://console.yandex.cloud/`.
 
 Речь в этом `README` пойдёт о используемых ресурсах и о возможностях пары модулей: 
 * [keycloak-deploy](#keycloak-deploy)

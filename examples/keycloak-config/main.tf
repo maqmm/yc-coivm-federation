@@ -28,15 +28,10 @@ module "keycloak-config" {
   # =====================
   # Org/Federation values
   # =====================
-  org_id   = "" #var.YC_ORGANIZATION_ID #IMPORTANT RERUN source ../env-yc.sh OR PRINT ID HERE AS "<id>"
+  org_id = ""
   fed_name = "kc"
 
-  kc_user = {
-    name   = "kc-user1"
-    pass   = "Gu95-paSw38"
-    domain = "test.domain"
-  }
-
+  users = jsondecode(file("users.json")) # replace jsondecode to yamldecode for yaml
 
   # ==================
   # Keycloak VM values
@@ -44,7 +39,7 @@ module "keycloak-config" {
   kc_realm_name  = "kc"
   kc_realm_descr = "My Keycloak Realm"
 
-  kc_fqdn     = ""
+  kc_fqdn = ""
   kc_port = "8443"
   kc_adm_user = "admin"
   kc_adm_pass = ""

@@ -29,10 +29,33 @@ variable "yc_cert" {
   default     = "yc-root.crt"
 }
 
-variable "kc_user" {
-  description = "Keycloak test user account"
-  type        = map(string) # name & password
-  default     = {}
+variable "users" {
+  description = "Users configuration"
+  type = object({
+    templates = optional(map(object({
+      first_name          = optional(string)
+      last_name           = optional(string)
+      email_domain        = optional(string)
+      phone              = optional(string)
+      full_name          = optional(string)
+      password           = optional(string)
+      photo_path        = optional(string)
+      temporary_password = optional(bool)
+      enabled            = optional(bool)
+    })))
+    users = map(object({
+      template           = optional(string)
+      first_name         = optional(string)
+      last_name          = optional(string)
+      email_domain       = optional(string)
+      phone             = optional(string)
+      full_name         = optional(string)
+      password          = optional(string)
+      photo_path        = optional(string)
+      temporary_password = optional(bool)
+      enabled           = optional(bool)
+    }))
+  })
 }
 
 # =====================
