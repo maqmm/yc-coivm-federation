@@ -16,6 +16,7 @@ if [ -z "$ORG_ID" ]; then
   ORG_ID=$(yc resource-manager cloud get "$TF_VAR_YC_CLOUD_ID" --profile "$YC_PROFILE" --format=json --jq .organization_id)
 fi
 export TF_VAR_YC_ORGANIZATION_ID=$ORG_ID
+export TF_VAR_YC_ZONE_ID=""
 export TF_VAR_YC_ZONE_ID=$(yc dns zone list --profile "$YC_PROFILE" --format json --jq 'map(select(has("public_visibility"))) | if length == 1 then .[0].id else "" end')
 
     # debug output
@@ -138,6 +139,8 @@ if [ -f "$MAIN_TF" ]; then
 
         if [ -n "$CERT_ID" ]; then
             export TF_VAR_CERTIFICATE_ID="$CERT_ID"
+        else
+            export TF_VAR_CERTIFICATE_ID=""
         fi
     fi
 fi

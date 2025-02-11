@@ -1,5 +1,5 @@
 # ==================================
-# Terraform & Provider Configuration
+# Terraform & Provider configuration
 # ==================================
 terraform {
   required_providers {
@@ -12,37 +12,46 @@ terraform {
       version = "~> 3.2.2"
     }
     keycloak = {
-      source = "keycloak/keycloak"
+      source  = "keycloak/keycloak"
       version = ">= 5.0.0"
     }
   }
 }
 
-# ===========================
+# ==================================
 # Call keycloak-config module
-# ===========================
+# ==================================
 module "keycloak-config" {
-  source = "../../keycloak-config"
-  labels = { tag = "keycloak-config" }
+  source           = "../../keycloak-config"
 
-  # =====================
-  # Org/Federation values
-  # =====================
-  org_id = ""
-  fed_name = "kc"
+  # ================================
+  # Input variables
+  # ================================
+  labels           = { tag = "keycloak-config" }
 
-  users = jsondecode(file("users.json")) # replace jsondecode to yamldecode for yaml
+  # ================================
+  # Organization variables
+  # ================================
+  org_id           = ""
+  fed_name         = "kc"
 
-  # ==================
-  # Keycloak VM values
-  # ==================
-  kc_realm_name  = "kc"
-  kc_realm_descr = "My Keycloak Realm"
+  # ================================
+  # Keycloak variables
+  # ================================
+  kc_fqdn          = ""
+  kc_port          = ""
 
-  kc_fqdn = ""
-  kc_port = "8443"
-  kc_adm_user = "admin"
-  kc_adm_pass = ""
+  kc_adm_user      = ""
+  kc_adm_pass      = ""
+
+  kc_realm_name    = "kc"
+  kc_realm_descr   = "My Keycloak Realm"
+
+  # ================================
+  # Users configuration
+  # ================================
+  users            = jsondecode(file("users.json")) # replace jsondecode to yamldecode for yaml
+
 }
 
 output "console-url" {

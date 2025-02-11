@@ -2,7 +2,7 @@
 
 # default settings
 HTTPS_PORT=8443
-MAX_RETRIES=120
+MAX_RETRIES=360
 RETRY_INTERVAL=1
 
 # parse kc_fqdn & kc_port from main.tf
@@ -23,7 +23,7 @@ echo "Waiting for Keycloak to be available: $KC_FQDN:$HTTPS_PORT"
 
 check_health() {
     # ignore stderr and check code only
-    curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null | grep -q "HTTP/.*200"
+    curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null |sed -n '3p'| grep -q "HTTP/[1-2].*[[:space:]]\(200\|302\)"
     return $?
 }
 

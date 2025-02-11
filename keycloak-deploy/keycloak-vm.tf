@@ -4,40 +4,12 @@
 
 data "yandex_resourcemanager_folder" "kc_folder" {
   cloud_id  = var.cloud_id
-  folder_id = var.kc_folder_id
+  folder_id = var.folder_id
 }
 
 # Define a Keycloak VM base image
 data "yandex_compute_image" "kc_image" {
   family = var.kc_image_family
-}
-
-# Create Service Account (SA) for Keycloak VM
-resource "yandex_iam_service_account" "kc_sa" {
-  name        = "${var.kc_hostname}-sa"
-  folder_id   = data.yandex_resourcemanager_folder.kc_folder.id
-  description = "for using on Keycloak's VM"
-}
-
-# Grant SA access to download certificates from Certificate Manager (CM)
-resource "yandex_resourcemanager_folder_iam_member" "cm_cert_download" {
-  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
-  role      = "certificate-manager.certificates.downloader"
-  member    = "serviceAccount:${yandex_iam_service_account.kc_sa.id}"
-}
-
-# Grant SA access to Keycloak's VM metadata
-resource "yandex_resourcemanager_folder_iam_member" "rm_viewer" {
-  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
-  role      = "resource-manager.viewer"
-  member    = "serviceAccount:${yandex_iam_service_account.kc_sa.id}"
-}
-
-# Grant SA access to Keycloak's VM metadata
-resource "yandex_resourcemanager_folder_iam_member" "compute_viewer" {
-  folder_id = data.yandex_resourcemanager_folder.kc_folder.id
-  role      = "compute.viewer"
-  member    = "serviceAccount:${yandex_iam_service_account.kc_sa.id}"
 }
 
 # Create Keycloak VM
@@ -47,12 +19,11 @@ resource "yandex_compute_instance" "kc_vm" {
   hostname           = var.kc_hostname
   platform_id        = "standard-v3"
   zone               = var.kc_zone_id
-  service_account_id = yandex_iam_service_account.kc_sa.id
 
   resources {
-    cores  = 2
-    memory = 2
-    core_fraction = 100
+    cores  = var.kc_vm_cores
+    memory = var.kc_vm_memory
+    core_fraction = var.kc_vm_core_fraction
   }
 
   scheduling_policy {
@@ -68,7 +39,7 @@ resource "yandex_compute_instance" "kc_vm" {
   }
 
   network_interface {
-    subnet_id          = local.need_new_subnet ? yandex_vpc_subnet.kc_subnet[0].id : data.yandex_vpc_subnet.kc_subnet_existing[0].id
+    subnet_id  = local.need_vpc ? yandex_vpc_subnet.kc_subnet[0].id : data.yandex_vpc_subnet.kc_subnet_existing[0].id
     nat                = true
     nat_ip_address     = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
     security_group_ids = [yandex_vpc_security_group.kc_sg.id]
@@ -107,7 +78,7 @@ resource "null_resource" "copy_certificates" {
     type        = "ssh"
     user        = var.kc_vm_username
     private_key = file(var.kc_vm_ssh_priv_file != null ? chomp(var.kc_vm_ssh_priv_file) : replace(var.kc_vm_ssh_pub_file, ".pub", ""))
-    host        = yandex_vpc_address.kc_pub_ip.external_ipv4_address[0].address
+    host        = yandex_compute_instance.kc_vm.network_interface[0].nat_ip_address
     timeout     = "5m"
   }
 }

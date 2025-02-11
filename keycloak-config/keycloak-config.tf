@@ -342,7 +342,7 @@ resource "keycloak_saml_user_property_protocol_mapper" "property_surname" {
   saml_attribute_name_format = "Basic"
 }
 
-resource "keycloak_saml_user_attribute_protocol_mapper" "property_fullname" {
+resource "keycloak_saml_user_attribute_protocol_mapper" "attribute_fullname" {
   realm_id                   = keycloak_realm.realm.id
   client_id                  = keycloak_saml_client.client.id
   name                       = "Full Name"
@@ -372,17 +372,8 @@ resource "keycloak_saml_user_attribute_protocol_mapper" "attribute_avatar" {
   saml_attribute_name_format = "Basic"
 }
 
-#users who need passwords
-locals {
-  users_needing_password = {
-    for username, user in var.users.users : username => user
-    if try(user.password, null) == null && 
-       try(var.users.templates[try(user.template, null)].password, null) == null
-  }
-}
-
 resource "random_password" "user_password" {
-  for_each = local.users_needing_password
+  for_each = var.users.users
 
   length           = 16
   special          = false
@@ -451,7 +442,8 @@ resource "keycloak_user" "users" {
   }
 
   depends_on = [
-    keycloak_realm_user_profile.user_profile
+    keycloak_realm_user_profile.user_profile,
+    random_password.user_password
   ]
 }
 
