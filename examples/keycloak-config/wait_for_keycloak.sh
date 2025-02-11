@@ -23,7 +23,7 @@ echo "Waiting for Keycloak to be available: $KC_FQDN:$HTTPS_PORT"
 
 check_health() {
     # ignore stderr and check code only
-    curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null | grep -q "HTTP/.*200"
+    curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null | grep -q "HTTP/.*\(200\|302\)"
     return $?
 }
 

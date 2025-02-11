@@ -56,6 +56,6 @@ resource "yandex_organizationmanager_saml_federation_user_account" "org_users" {
   name_id       = each.key
 
   depends_on = [
-    null_resource.federation_cert
+    keycloak_user.users
   ]
 }

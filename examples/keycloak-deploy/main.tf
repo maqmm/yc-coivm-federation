@@ -16,6 +16,7 @@ terraform {
 module "keycloak-deploy" {
   source   = "../../keycloak-deploy"
   cloud_id = var.YC_CLOUD_ID
+  folder_id  = var.YC_FOLDER_ID
   labels   = { tag = "keycloak-deploy" }
 
   # ==================
@@ -23,7 +24,6 @@ module "keycloak-deploy" {
   # ==================
   kc_image_family = "container-optimized-image"
 
-  kc_folder_id  = var.YC_FOLDER_ID
   kc_zone_id      = "ru-central1-d"
   kc_network_name = "forkc"
   kc_subnet_name  = "forkc-ru-central1-d"
@@ -45,12 +45,8 @@ module "keycloak-deploy" {
   # ===================
   # Certificates values
   # ===================
-  cert_exist        = var.CERTIFICATE_ID
-  kc_cert_path      = "/usr/local/etc/certs"
+  kc_cert_exist        = var.CERTIFICATE_ID
   le_cert_name      = "kc"
-  le_cert_descr     = "LE Certificate for Keycloak VM"
-  le_cert_pub_chain = "cert-pub-chain.pem"
-  le_cert_priv_key  = "cert-priv-key.pem"
 }
 
 output "kc_fqdn" {
