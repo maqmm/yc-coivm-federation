@@ -1,6 +1,10 @@
-# =======================================
-# Keycloak-config module. Input variables
-# =======================================
+# ==================================
+# Keycloak-config module
+# ==================================
+
+# ==================================
+# Input variables
+# ==================================
 
 variable "labels" {
   description = "A set of key/value label pairs to assign."
@@ -8,9 +12,10 @@ variable "labels" {
   default     = null
 }
 
-# ========================
-# Org/Federation variables
-# ========================
+# ==================================
+# Organization variables
+# ==================================
+
 variable "org_id" {
   description = "YC Organization ID"
   type        = string
@@ -23,44 +28,9 @@ variable "fed_name" {
   default     = null
 }
 
-variable "yc_cert" {
-  description = "Yandex Cloud SSL certificate"
-  type        = string
-  default     = "yc-root.crt"
-}
-
-variable "users" {
-  description = "Users configuration"
-  type = object({
-    templates = optional(map(object({
-      first_name          = optional(string)
-      last_name           = optional(string)
-      email_domain        = optional(string)
-      phone              = optional(string)
-      full_name          = optional(string)
-      password           = optional(string)
-      photo_path        = optional(string)
-      temporary_password = optional(bool)
-      enabled            = optional(bool)
-    })))
-    users = map(object({
-      template           = optional(string)
-      first_name         = optional(string)
-      last_name          = optional(string)
-      email_domain       = optional(string)
-      phone             = optional(string)
-      full_name         = optional(string)
-      password          = optional(string)
-      photo_path        = optional(string)
-      temporary_password = optional(bool)
-      enabled           = optional(bool)
-    }))
-  })
-}
-
-# =====================
-# Keycloak VM variables
-# =====================
+# ==================================
+# Keycloak variables
+# ==================================
 
 variable "kc_fqdn" {
   description = "Keycloak public DNS FQDN"
@@ -96,6 +66,39 @@ variable "kc_realm_descr" {
   description = "Keycloak Realm description"
   type        = string
   default     = null
+}
+
+# ==================================
+# Users configuration
+# ==================================
+
+variable "users" {
+  description = "Users configuration"
+  type = object({
+    templates = optional(map(object({
+      first_name          = optional(string)
+      last_name           = optional(string)
+      email_domain        = optional(string)
+      phone              = optional(string)
+      full_name          = optional(string)
+      password           = optional(string)
+      photo_path        = optional(string)
+      temporary_password = optional(bool)
+      enabled            = optional(bool)
+    })))
+    users = map(object({
+      template           = optional(string)
+      first_name         = optional(string)
+      last_name          = optional(string)
+      email_domain       = optional(string)
+      phone             = optional(string)
+      full_name         = optional(string)
+      password          = optional(string)
+      photo_path        = optional(string)
+      temporary_password = optional(bool)
+      enabled           = optional(bool)
+    }))
+  })
 }
 
 output "console-url" {
