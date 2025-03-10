@@ -64,14 +64,20 @@ resource "yandex_compute_instance" "kc_vm" {
 resource "null_resource" "copy_certificates" {
   depends_on = [local_file.cert, local_file.key]
 
+  provisioner "remote-exec" {
+    inline = [
+      "mkdir -p /home/${var.kc_vm_username}/certs"
+    ]
+  }
+  
   provisioner "file" {
     source      = "${path.root}/cert.pem"
-    destination = "/home/${var.kc_vm_username}/cert.pem"
+    destination = "/home/${var.kc_vm_username}/certs/cert.pem"
   }
 
   provisioner "file" {
     source      = "${path.root}/key.pem"
-    destination = "/home/${var.kc_vm_username}/key.pem"
+    destination = "/home/${var.kc_vm_username}/certs/key.pem"
   }
 
   connection {

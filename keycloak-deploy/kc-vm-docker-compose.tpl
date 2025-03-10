@@ -9,9 +9,8 @@ services:
       - KC_HOSTNAME=${KC_FQDN}
       - KC_HOSTNAME_STRICT=true
       - KC_HTTP_ENABLED=false
-      - KC_HTTPS_CERTIFICATE_FILE=/usr/local/etc/certs/cert-pub-chain.pem
-      - KC_HTTPS_CERTIFICATE_KEY_FILE=/usr/local/etc/certs/cert-priv-key.pem
+      - KC_HTTPS_CERTIFICATE_FILE=/usr/local/etc/certs/cert.pem
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/usr/local/etc/certs/key.pem
     volumes:
-      - /home/${VM_USER}/cert.pem:/usr/local/etc/certs/cert-pub-chain.pem
-      - /home/${VM_USER}/key.pem:/usr/local/etc/certs/cert-priv-key.pem
+      - /home/${VM_USER}/certs:/usr/local/etc/certs
     command: start-dev
