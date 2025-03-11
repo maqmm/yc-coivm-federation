@@ -3,7 +3,7 @@
 # Import Keycloak resources into Federation & Organization
 # ========================================================
 
-# Create YC Federation
+# create YC Federation
 resource "yandex_organizationmanager_saml_federation" "kc_fed" {
   name                         = var.fed_name
   organization_id              = var.org_id

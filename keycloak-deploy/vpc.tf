@@ -6,14 +6,14 @@ locals {
   need_vpc = var.kc_subnet_exist == null || var.kc_subnet_exist == ""
 }
 
-# Создание новой сети, если не существует
+# create new vpc
 resource "yandex_vpc_network" "kc_net" {
   count     = local.need_vpc ? 1 : 0
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
   name      = var.kc_network_name
 }
 
-# Создание новой подсети, если не существует
+# create new subnet
 resource "yandex_vpc_subnet" "kc_subnet" {
   count     = local.need_vpc ? 1 : 0
   folder_id      = data.yandex_resourcemanager_folder.kc_folder.id
@@ -23,14 +23,14 @@ resource "yandex_vpc_subnet" "kc_subnet" {
   zone           = var.kc_zone_id
 }
 
-# Попытка получить существующую подсеть
+# take existing subnet
 data "yandex_vpc_subnet" "kc_subnet_existing" {
   count = local.need_vpc ? 0 : 1
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
   subnet_id = var.kc_subnet_exist
 }
 
-# Create public ip address for Keycloak VM
+# create public ip address for Keycloak VM
 resource "yandex_vpc_address" "kc_pub_ip" {
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
   name      = var.kc_hostname
@@ -39,7 +39,7 @@ resource "yandex_vpc_address" "kc_pub_ip" {
   }
 }
 
-# Create Security Group for Keycloak VM
+# create security group for Keycloak VM
 resource "yandex_vpc_security_group" "kc_sg" {
   name       = var.kc_vm_sg_name
   folder_id  = data.yandex_resourcemanager_folder.kc_folder.id

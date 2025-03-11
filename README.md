@@ -20,7 +20,12 @@
     * [Шаги](#steps)
         * [Переход в директорию examples/keycloak-deploy](#steps/cd-k-d)
         * [Скрипт env-yc.sh](#steps/env-yc)
-        * ...
+        * [Развертывание модуля keycloak-deploy](#steps/tfaa-k-d)
+        * [Переход в директорию examples/keycloak-config](#steps/cd-k-c)
+        * [Скрипт sync.sh](#steps/sync)
+        * [Скрипт wait_for_keycloak.sh](#steps/wait)
+        * [Развертывание модуля keycloak-config](#steps/tfaa-k-с)
+        * [Возврат в директорию examples](#steps/cd-examples)
 * [Архитектура](#arch)
     * [Модуль keycloak-deploy](#keycloak-deploy)
         * [Ресурсы](#keycloak-deploy/resources)
@@ -35,15 +40,15 @@
 
 0. Клонируйте репозиторий.
 
-    ```
+    ```bash
     git clone https://github.com/maqmm/yc-coivm-federation.git
     ```
 
-1. Создайте или убедитесь в корректности конфигурации [профиля YC CLI](#yc-cli); проверьте, что существуют [ресурсы для быстрого запуска](#resources); у аккаунта, используемого в профиле YC CLI есть [необходимые роли](#roles).
+1. Создайте или убедитесь в корректности конфигурации [профиля YC CLI](#yc-cli), проверьте, что у аккаунта, используемого в профиле YC CLI есть [необходимые роли](#roles); проверьте, что существуют [ресурсы для быстрого запуска](#resources).
 
 2. Сразу после клонирования репозитория, для создания федерации выполните команду:
 
-    ```
+    ```bash
     cd yc-coivm-federation/examples/keycloak-deploy && terraform init && source ../env-yc.sh && terraform apply -auto-approve && cd ../keycloak-config && terraform init && bash ./sync.sh && bash ./wait_for_keycloak.sh && terraform apply -auto-approve ; cd ..
     ```
 
@@ -51,13 +56,13 @@
 
 * создавать ресурсы
 
-    ```
+    ```bash
     cd keycloak-deploy && source ../env-yc.sh && terraform apply -auto-approve && cd ../keycloak-config && bash ./sync.sh && bash ./wait_for_keycloak.sh && terraform apply -auto-approve ; cd ..
     ```
 
 * удалять ресурсы
 
-    ```
+    ```bash
     cd keycloak-config && source ../env-yc.sh && terraform destroy -auto-approve && cd ../keycloak-deploy && terraform destroy -auto-approve ; cd ..
     ```
 
@@ -202,25 +207,144 @@ xychart-beta
 > При проблемах с удалением федеративных пользователей из организации добавьте аккаунту роль `organization-manager.admin` на организацию, вместо/к роли `organization-manager.federations.admin`. Это связано с особенностями провайдера.
 
 ### Конфигурирование пользователей<a id="user-config"/></a>
-...
+
+Конфигурация пользователей задана в JSON-файле [users.json](./examples/keycloak-config/users.json) и передается в модуль через переменную `users`.
+
+<details>
+<summary><em>Схема переменных</em></summary>
+<pre class="code-block"><code class="language-hcl">object({
+    templates = optional(map(object({
+        first_name          = optional(string)
+        last_name           = optional(string)
+        email_domain        = optional(string)
+        phone               = optional(string)
+        full_name           = optional(string)
+        password            = optional(string)
+        photo_path          = optional(string)
+        temporary_password  = optional(bool)
+        enabled             = optional(bool)
+    })))
+    users = map(object({
+        template            = optional(string)
+        first_name          = optional(string)
+        last_name           = optional(string)
+        email_domain        = optional(string)
+        phone               = optional(string)
+        full_name           = optional(string)
+        password            = optional(string)
+        photo_path          = optional(string)
+        temporary_password  = optional(bool)
+        enabled             = optional(bool)
+    }))
+})</code></pre>
+</details>
+
+В [examples/keycloak-config/users.json](./examples/keycloak-config/users.json) используется одна из самых простых конфигураций пользователей:
+
+```json
+{
+  "users": {"user1":{}, "user2":{}}
+}
+```
+Указаны только `username` двух пользователей.
+
+Но файл конфигурации [examples/keycloak-config/users.json](./examples/keycloak-config/users.json) также может выглядеть так:
+```json
+{
+    "templates": {
+        "default": {
+            "first_name":           "Default",
+            "last_name":            "User",
+            "email_domain":         "example.com",
+            "full_name":            "Default User",
+            "password":             "DefaultPass123",
+            "enabled":              true,
+            "photo_path":           "~/Pictures/company_logo.jpg",
+            "temporary_password":   false
+        },
+        "admin": {
+            "first_name":           "Admin",
+            "last_name":            "User",
+            "email_domain":         "admin.example.com ",
+            "phone":                "+70000000001",
+            "full_name":            "Admin User",
+            "password":             "AdminPass123",
+            "enabled":              true,
+            "temporary_password":   false
+        },
+        "": {
+            "phone":                "+70000000000"
+        }
+    },
+    "users": {
+        "user1": {
+            "template":             "admin",
+            "first_name":           "Иван",
+            "last_name":            "Иванов",
+            "email_domain":         "example.com",
+            "phone":                "+71234567890",
+            "full_name":            "Иван Иванов",
+            "password":             "password123",
+            "photo_path":           "~/Pictures/cats/ava.jpg"
+        },
+
+        "user2": {
+            "template":             "default",
+            "password":             "password456"
+        }
+    }
+}
+```
+#### Шаблоны<a id="user-config/templates"/></a>
+Шаблоны из `templates` имеют теже параметры что и пользователи, но не создаются как пользователи. Для пользователя из `users` можно указать название шаблона в параметре `template`. Значения из этого шаблона будут использованы при создании такого пользователя, если конкретный параметр явно не указан в объекте самого пользователя. Это нужно для уменьшения объявления однотипных параметров.
+
+#### Параметры пользователей<a id="user-config/parameters"/></a>
+1. В общем случае, при создании пользователя будет использовано значение параметра явно сконфигурированного в его объекте, например `"password": "password456"` для `user2`. 
+2. Если для пользователя указан шаблон(`template`), то все значения для не указанных явно параметров будут взяты из шаблона с таким именем, например для `user2` будет использовано `"full_name": "Default User"` из соответствующего шаблона(`default`). 
+3. Если необходимый параметр не указан ни в объекте пользователя, ни в шаблоне, привязанном этому пользователю, то есть ультимативный шаблон `""`, его можно не указывать у пользователя, он проверяется для всех пользователей, например для `user2` будет использовано `"phone": "+70000000000"` из шаблона `""`.
+4. В завершении проверок, если значения не было объявлено и найдено в предыдущих пунктах, устанавливается нулевое значение и этот параметр не используется у пользователя. Для некоторых параметров есть значения по умолчанию, подробнее в таблице ниже.
+
+| __Параметр__ | __Описание__ | __Порядок исползования__ |
+| ---         | ---         | ---         |
+| `first_name` | Имя.<br>Ограничение по длине: `64` символа. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `null` |
+| `last_name` | Фамилия.<br>Ограничение по длине: `64` символа. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `null` |
+| `email_domain` | Домен, который будет указан в итоговом email пользователя `username@email_domain`.  | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Используется FQDN Keycloak из переменной `kc_fqdn` <br>5. Устанавливается как `null` |
+| `phone` | Номер телефона.<br>Ограничение по длине: `64` символа. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `null` |
+| `full_name` | Полное имя.<br>Ограничение по длине: `64` символа. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `null` |
+| `password` | Пароль пользователя. Если пароль нигде в [users.json](./examples/keycloak-config/users.json) не указан явно, будет использован сгенерированный. Подробнее про то, [как узнать пароли пользователей](#user-config/get-password) ниже таблицы. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается сгенерированный в ресурсе `random_password.user_password` пароль |
+| `photo_path` | Путь к аватару пользователя.<br>Файл будет конвертирован в _base64_, его длина не должна превышать `204800` символов.  | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `null` |
+| `temporary_password` | Флаг, является ли пароль временным. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `false` |
+| `enabled` | Флаг, включен ли пользователь. | 1. Указан у конкретного пользователя в `users`<br>2. Указан у конкретного, привязанного к пользователю, шаблона из `templates`<br>3. Указан у ультимативного шаблона `""` из `templates`<br>4. Устанавливается как `true` |
+
+#### Команда получения пароля для конкретного пользователя `user1` из файла `terraform.tfstate` в директории [examples/keycloak-config/](./examples/keycloak-config):<a id="user-config/get-password"/></a>
+
+```bash
+cat terraform.tfstate | jq -r '.resources[] | select(.module=="module.keycloak-config" and .type=="keycloak_user" and .name=="users") | .instances[] | select(.index_key=="user1") | .attributes.initial_password[0].value'
+```
+
+#### Команда получения паролей всех пользователей в формате `username:password` из файла `terraform.tfstate` в директории [examples/keycloak-config/](./examples/keycloak-config):<a id="user-config/get-passwords"/></a>
+
+```bash
+cat terraform.tfstate | jq -r '.resources[] | select(.module=="module.keycloak-config" and .type=="keycloak_user" and .name=="users") | .instances[] | "\(.attributes.username):\(.attributes.initial_password[0].value)"'
+```
 
 ---
 
 ### Пошагово разберем какие действия выполняются в каждой из частей сборной команды:<a id="steps"/></a>
 
-```
+```bash
 cd yc-coivm-federation/examples/keycloak-deploy && terraform init && source ../env-yc.sh && terraform apply -auto-approve && cd ../keycloak-config && terraform init && bash ./sync.sh && bash ./wait_for_keycloak.sh && terraform apply -auto-approve ; cd ..
 ```
 
 #### Переход в директорию [examples/keycloak-deploy](./examples/keycloak-deploy) и инициализация<a id="steps/cd-k-d"/></a>
 
 Изменение директории после `git clone https://github.com/maqmm/yc-coivm-federation.git`:
-```
+```bash
 cd yc-coivm-federation/examples/keycloak-deploy
 ```
 
 Инициализация провайдеров модуля `keycloak-deploy`:
-```
+```bash
 terraform init
 ```
 
@@ -228,7 +352,7 @@ terraform init
 
 Команда `source` использует текущий shell для экспорта переменных окружений, на основе которых будет выполняться `terraform plan & apply`. При изменении shell'а или истечения 12 часов валидности IAM токена, выполняйте команду:
 
-```
+```bash
 source ../env-yc.sh
 ```
 
@@ -255,6 +379,70 @@ source ../env-yc.sh
     Получает `kc_hostname` из файла [examples/keycloak-deploy/main.tf](./examples/keycloak-deploy/main.tf). 
     Устанавливает переменную `TF_VAR_CERTIFICATE_ID`, записывая в неё id `ISSUED` сертификата, если такой существует в каталоге для полученного ранее в этом пункте FQDN: `<kc_hostname>.<ZONE>`.
 9. Выводит переменные, которые удалось установить с помощью `echo`.
+
+#### Развертывание модуля [keycloak-deploy](./examples/keycloak-deploy)<a id="steps/tfaa-k-d"/></a>
+
+Находясь в директории [examples/keycloak-deploy](./examples/keycloak-deploy):
+```bash
+terraform apply -auto-approve
+```
+Команда запускает развертывание ресурсов с автоподтверждением. Ресурсы поднимаются в порядке, соответствующем [графу зависимостей](#keycloak-deploy).
+
+#### Переход в директорию [examples/keycloak-config](./examples/keycloak-config) и инициализация<a id="steps/cd-k-c"/></a>
+
+Изменение директории после директории [examples/keycloak-deploy](./examples/keycloak-deploy):
+```bash
+cd ../keycloak-config
+```
+
+Инициализация провайдеров модуля `keycloak-config`:
+```bash
+terraform init
+```
+
+#### Скрипт `sync.sh`, синхронизирующий переменные между модулями<a id="steps/sync"/></a>
+
+```bash
+bash ./sync.sh
+```
+Производит перенос некоторых переменных из файла [examples/keycloak-deploy/main.tf](./examples/keycloak-deploy/main.tf) в [examples/keycloak-config/main.tf](./examples/keycloak-config/main.tf).
+
+##### Устанавливаются следующие переменные:<a id="steps/sync/var"/></a>
+| __Переменная__ | __Значение__ |
+| ---         | ---         |
+| `kc_fqdn` | FQDN Keycloak из output прошлого модуля, получает командой `terraform -chdir="../keycloak-deploy" output -raw kc_fqdn` |
+| `kc_port` | Порт Keycloak из `main.tf` прошлого модуля. |
+| `kc_adm_user` | Имя пользователя администратора Keycloak из `main.tf` прошлого модуля. |
+| `kc_adm_pass` | Пароль администратора Keycloak из `main.tf` прошлого модуля. |
+| `org_id` | ID организации из переменной окружения `TF_VAR_YC_ORGANIZATION_ID`, установленной скриптом [env-yc.sh](#steps/env-yc). |
+
+#### Скрипт `wait_for_keycloak.sh`, ожидающий поднятие Keycloak<a id="steps/wait"/></a>
+
+```bash
+bash ./wait_for_keycloak.sh
+```
+
+##### Шаги<a id="steps/wait/steps"/></a>
+
+1. Получает FQDN и порт из файла [main.tf](./examples/keycloak-config/main.tf).
+2. Проверят доступность Keycloak в цикле каждую секунду командой `curl --head -k -fsS "https://${KC_FQDN}:${HTTPS_PORT}" 2>/dev/null |sed -n '3p'| grep -q "HTTP/[1-2].*[[:space:]]\(200\|302\)"`.
+3. Завершается успешно как только Keycloak ответит на запрос корректно или завершается с ошибкой через 360 секунд.
+
+#### Развертывание модуля [keycloak-config](./examples/keycloak-config)<a id="steps/tfaa-k-с"/></a>
+
+Находясь в директории [examples/keycloak-config](./examples/keycloak-config):
+```bash
+terraform apply -auto-approve
+```
+Команда запускает развертывание ресурсов с автоподтверждением. Ресурсы поднимаются в порядке, соответствующем [графу зависимостей](#keycloak-config).
+
+#### Возврат в директорию [examples](./examples)<a id="steps/cd-examples"/></a>
+
+Изменение директории после директории [examples/keycloak-config](./examples/keycloak-config):
+```bash
+cd ..
+```
+Команда выполняется независимо от статуса выполнения предыдущих команд, так как сразу после [первого изменения директории](#steps/cd-k-d) и до конца сборной команды рабочей директорией является вложенная в [examples](./examples) директория.
 
 ---
 

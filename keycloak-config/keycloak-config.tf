@@ -80,7 +80,6 @@ resource "keycloak_saml_client" "client" {
   encrypt_assertions        = false
 }
 
-
 resource "keycloak_realm_user_profile" "user_profile" {
   realm_id = keycloak_realm.realm.id
   unmanaged_attribute_policy = "ENABLED"

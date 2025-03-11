@@ -7,12 +7,12 @@ data "yandex_resourcemanager_folder" "kc_folder" {
   folder_id = var.folder_id
 }
 
-# Define a Keycloak VM base image
+# define a Keycloak VM base image
 data "yandex_compute_image" "kc_image" {
   family = var.kc_image_family
 }
 
-# Create Keycloak VM
+# create Keycloak VM
 resource "yandex_compute_instance" "kc_vm" {
   folder_id          = data.yandex_resourcemanager_folder.kc_folder.id
   name               = var.kc_hostname

@@ -12,7 +12,7 @@ locals {
   kc_fqdn = "${var.kc_hostname}.${trimsuffix(data.yandex_dns_zone.kc_dns_zone.zone, ".")}"
 }
 
-# Create DNS record for Keycloak VM with created public ip address
+# create DNS record for Keycloak VM with created public ip address
 resource "yandex_dns_recordset" "kc_dns_rec" {
   zone_id = data.yandex_dns_zone.kc_dns_zone.id
   name    = var.kc_hostname
@@ -25,14 +25,14 @@ locals {
   need_cert = var.kc_cert_exist == null || var.kc_cert_exist == ""
 }
 
-# Попытка получить существующий сертификат
+# take existing certificate
 data "yandex_cm_certificate" "cert_existing" {
   count = local.need_cert ? 0 : 1
   certificate_id = var.kc_cert_exist
   folder_id     = data.yandex_resourcemanager_folder.kc_folder.id
 }
 
-# Создание нового сертификата, если существующий невалиден или не существует
+# create new certificate
 resource "yandex_cm_certificate" "kc_le_cert" {
   count     = local.need_cert ? 1 : 0
   folder_id = data.yandex_resourcemanager_folder.kc_folder.id
@@ -47,7 +47,7 @@ resource "yandex_cm_certificate" "kc_le_cert" {
   }
 }
 
-# Create domain validation DNS record for Let's Encrypt service
+# create domain validation DNS record for Let's Encrypt
 resource "yandex_dns_recordset" "validation_dns_rec" {
   count  = local.need_cert ? 1 : 0
   zone_id = data.yandex_dns_zone.kc_dns_zone.id
@@ -61,7 +61,7 @@ resource "yandex_dns_recordset" "validation_dns_rec" {
   }
 }
 
-# Wait for certificate validation
+# wait for certificate validation
 data "yandex_cm_certificate" "cert_validated" {
   depends_on = [
     yandex_cm_certificate.kc_le_cert,
@@ -71,7 +71,7 @@ data "yandex_cm_certificate" "cert_validated" {
   wait_validation = true
 }
 
-# Get certificate content
+# get certificate content
 data "yandex_cm_certificate_content" "cert" {
   certificate_id = data.yandex_cm_certificate.cert_validated.id
   wait_validation = true

@@ -33,7 +33,7 @@ variable "kc_image_family" {
 }
 
 variable "kc_preemptible" {
-  description = "Keycloak VM preemptible"
+  description = "Keycloak VM preemptible flag"
   type        = bool
   default     = false
 }
@@ -129,7 +129,7 @@ variable "kc_subnet_name" {
 }
 
 variable "kc_subnet_exist" {
-  description = "subnet id if it exist in folder"
+  description = "Subnet ID if it exist in folder"
   type        = string
   default     = null
 }
@@ -163,7 +163,7 @@ variable "dns_zone_name" {
 }
 
 variable "dns_zone_exist" {
-  description = "zone id if it exist in folder"
+  description = "Zone ID if it exist in folder"
   type        = string
   default     = null
 }
@@ -173,7 +173,7 @@ variable "dns_zone_exist" {
 # =================================
 
 variable "kc_cert_exist" {
-  description = "cloud cert id if it exist in folder"
+  description = "Cloud certificate ID if it exist in folder"
   type        = string
   default     = null
 }
