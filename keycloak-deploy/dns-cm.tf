@@ -55,6 +55,10 @@ resource "yandex_dns_recordset" "validation_dns_rec" {
   type    = yandex_cm_certificate.kc_le_cert[0].challenges[0].dns_type
   data    = [yandex_cm_certificate.kc_le_cert[0].challenges[0].dns_value]
   ttl     = 60
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Wait for certificate validation
