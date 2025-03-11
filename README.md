@@ -128,6 +128,9 @@ xychart-beta
 
 ### Настройка профиля YC CLI<a id="yc-cli"/></a>
 
+> [!IMPORTANT]  
+> Для корректной работы скрипта `env-yc.sh` используйте версию YC CLI >= [0.134.0](https://yandex.cloud/ru/docs/cli/release-notes#version0.134.0). В ней добавили глобальный флаг `--jq`. Посмотреть версию: `yc version`
+
 Для начала рекомендую [создать отдельный профиль YC CLI](https://yandex.cloud/ru/docs/cli/operations/profile/profile-create).
 
 <details>
@@ -142,6 +145,10 @@ xychart-beta
 - ID облака - `yc config set cloud-id <id>`
 - ID каталога - `yc config set folder-id <id>`
 - ID организации, если не указать будет использована организация облака - `yc config set organization-id <id>`
+
+Если в профиле используется сервисный аккаунт или пользователь без роли `resource-manager.clouds.member` на облако, советую указать ID организации явно `yc config set organization-id <id>` или выдать эту роль. Это нужно, чтобы избежать проблем с этой переменной в модуле [keycloak-config](#keycloak-config/variables).
+
+Если в профиле используется федеративный пользователь, перед запуском скрипта `env-yc.sh` убедитесь, что аутентификация через браузер пройдена, сделать это можно, выполнив любую команду.
 
 ### Необходимые ресурсы<a id="resources"/></a>
 
@@ -167,7 +174,7 @@ xychart-beta
 
 - [Сертификат LE](https://yandex.cloud/ru/docs/certificate-manager/concepts/managed-certificate)
     
-    Скрипт [env-yc.sh](./examples/env-yc.sh) установит значение переменной `kc_cert_exist` самостоятельно, если для FQDN Kycloak'а существует выпущенный сертификат в каталоге. В этой же переменной можно указать ID любого другого __подходящего__ сертфиката. Сильно усеньшает время развертывания.
+    Скрипт [env-yc.sh](./examples/env-yc.sh) установит значение переменной `kc_cert_exist` самостоятельно, если для FQDN Kycloak'а существует выпущенный сертификат в каталоге. В этой же переменной можно указать ID любого другого __подходящего__ сертфиката. Сильно уменьшает время развертывания.
 
     Если переменная `kc_cert_exist` не указана или пустая, то нужный сертификат будет создан с именем из переменной `le_cert_name`, необходимая CNAME запись создастся в DNS-зоне. Terraform будет ожидать валидацию и выпуск сертификата. При выполнении `destroy` такой сертификат и его валидирующая DNS-запись имеют параметр `prevent_destroy = true` и будут запрещать `destroy` с ошибкой. Чтобы оставить сертификат для дальнейших деплоев выполните команду `terraform state rm module.keycloak-deploy.yandex_cm_certificate.kc_le_cert module.keycloak-deploy.yandex_dns_recordset.validation_dns_rec` или измените в файле [keycloak-deploy/dns-cm.tf](./keycloak-deploy/dns-cm.tf) на `prevent_destroy = false` для удаления сертификата и записи.
 
